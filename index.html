@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Breast Cancer Detection</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            color: #2d3748;
+            margin-bottom: 0.5rem;
+            font-size: 2.5rem;
+        }
+
+        .header p {
+            color: #718096;
+            font-size: 1.1rem;
+        }
+
+        .upload-container {
+            border: 2px dashed #cbd5e0;
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8fafc;
+        }
+
+        .upload-container:hover {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #64748b;
+            margin-bottom: 1rem;
+        }
+
+        .preview-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+            display: none;
+        }
+
+        .preview-box, .result-box {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .preview-box h3, .result-box h3 {
+            color: #2d3748;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .image-preview {
+            width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: #48bb78;
+            transition: width 0.3s ease;
+        }
+
+        .result-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .confidence {
+            color: #718096;
+            font-size: 0.9rem;
+        }
+
+        .loading {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            color: #4a5568;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid #e2e8f0;
+            border-top: 3px solid #4299e1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .preview-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Breast Cancer Detection</h1>
+            <p>Upload an X-ray image for analysis</p>
+        </div>
+
+        <div class="upload-container" onclick="document.getElementById('fileInput').click()">
+            <div class="upload-icon">📤</div>
+            <p>Click to upload or drag and drop</p>
+            <p style="font-size: 0.9rem; color: #718096;">X-ray image (PNG, JPG)</p>
+            <input type="file" id="fileInput" hidden accept="image/*">
+        </div>
+
+        <div class="preview-container" id="previewContainer">
+            <div class="preview-box">
+                <h3>Uploaded Image</h3>
+                <img id="imagePreview" class="image-preview">
+            </div>
+
+            <div class="result-box">
+                <h3>Analysis Results</h3>
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <span>Analyzing image...</span>
+                </div>
+                <div id="results" style="display: none;">
+                    <div class="result-text" id="resultText"></div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="confidence" id="confidenceText"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewContainer = document.getElementById('previewContainer');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const resultText = document.getElementById('resultText');
+        const progressFill = document.getElementById('progressFill');
+        const confidenceText = document.getElementById('confidenceText');
+
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Show preview
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    previewContainer.style.display = 'grid';
+                    loading.style.display = 'flex';
+                    results.style.display = 'none';
+                }
+                reader.readAsDataURL(file);
+
+                // Simulate API call to your Python backend
+                setTimeout(() => {
+                    analyzeMammogram(file);
+                }, 2000);
+            }
+        });
+
+        function analyzeMammogram(file) {
+            // This is where you would normally make an API call to your Python backend
+            // For now, we'll simulate a response
+            const mockPrediction = Math.random();
+            
+            loading.style.display = 'none';
+            results.style.display = 'block';
+            
+            // Update UI based on prediction
+            const isMalignant = mockPrediction > 0.5;
+            resultText.textContent = isMalignant ? 'Potential Malignant Finding' : 'Likely Benign';
+            resultText.style.color = isMalignant ? '#e53e3e' : '#48bb78';
+            
+            progressFill.style.width = `${mockPrediction * 100}%`;
+            progressFill.style.background = isMalignant ? '#e53e3e' : '#48bb78';
+            
+            confidenceText.textContent = `Confidence Score: ${(mockPrediction * 100).toFixed(1)}%`;
+        }
+
+        // Handle drag and drop
+        const uploadContainer = document.querySelector('.upload-container');
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadContainer.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadContainer.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadContainer.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            uploadContainer.style.background = '#edf2f7';
+        }
+
+        function unhighlight(e) {
+            uploadContainer.style.background = '#f8fafc';
+        }
+
+        uploadContainer.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const file = dt.files[0];
+            fileInput.files = dt.files;
+            fileInput.dispatchEvent(new Event('change'));
+        }
+    </script>
+</body>
+</html>
+
+
+
