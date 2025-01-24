@@ -208,7 +208,7 @@
                 }
                 reader.readAsDataURL(file);
 
-                // Simulate API call to your Python backend
+               
                 setTimeout(() => {
                     analyzeMammogram(file);
                 }, 2000);
@@ -216,14 +216,13 @@
         });
 
         function analyzeMammogram(file) {
-            // This is where you would normally make an API call to your Python backend
-            // For now, we'll simulate a response
+            
             const mockPrediction = Math.random();
             
             loading.style.display = 'none';
             results.style.display = 'block';
             
-            // Update UI based on prediction
+           
             const isMalignant = mockPrediction > 0.5;
             resultText.textContent = isMalignant ? 'Potential Malignant Finding' : 'Likely Benign';
             resultText.style.color = isMalignant ? '#e53e3e' : '#48bb78';
@@ -234,7 +233,7 @@
             confidenceText.textContent = `Confidence Score: ${(mockPrediction * 100).toFixed(1)}%`;
         }
 
-        // Handle drag and drop
+      
         const uploadContainer = document.querySelector('.upload-container');
 
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
